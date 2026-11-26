@@ -1,0 +1,15 @@
+
+# Arquivos gerados pelo Maven
+target/
+
+# Configurações locais do IntelliJ
+.idea/
+*.iml
+
+# Arquivos de configuração e senhas
+.env
+config.properties
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
