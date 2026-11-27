@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Servidores Afastados - IFPA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome para ícones institucionais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI', 'sans-serif'],
+                    },
+                    colors: {
+                        ifpa: {
+                            dark: '#1B5E20',
+                            primary: '#2E7D32',
+                            light: '#E8F5E9',
+                            accent: '#C62828',
+                            bg: '#F4F6F8'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ajustes finos de barra de rolagem e transições */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .tab-content {
+            animation: fadeIn 0.2s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-ifpa-bg text-slate-800 font-sans antialiased overflow-x-hidden">
+
+<!-- Container Principal -->
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Overlay Mobile Sidebar -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-20 hidden lg:hidden transition-opacity"></div>
+
+    <!-- Sidebar Lateral Institucional -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-68 bg-ifpa-dark text-white transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0 transition-transform duration-200 ease-in-out flex flex-col shadow-xl">
+        <!-- Cabeçalho da Marca IFPA -->
+        <div class="flex items-center justify-between px-6 py-5 border-b border-green-800/80 bg-[#144718]">
+            <div class="flex items-center space-x-3">
+                <!-- Logotipo Geométrico Estilo Rede Federal (IF) -->
+                <div class="grid grid-cols-3 gap-1 p-1.5 bg-white rounded-lg shadow-sm shrink-0">
+                    <span class="w-2 h-2 rounded-full bg-ifpa-accent"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-transparent"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                    <span class="w-2 h-2 rounded-sm bg-ifpa-primary"></span>
+                </div>
+                <div>
+                    <span class="block text-sm font-bold tracking-wider uppercase">IFPA • PROGEP</span>
+                    <span class="block text-xs text-green-200 font-medium">Servidores Afastados</span>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden text-green-200 hover:text-white p-1">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Menu de Navegação -->
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <p class="px-3 text-xs font-semibold text-green-300/80 uppercase tracking-wider mb-2">Módulos do Sistema</p>
+
+            <button onclick="switchTab('dashboard')" data-tab="dashboard" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl bg-ifpa-primary text-white shadow-sm transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-chart-pie w-5 text-center"></i>
+                        <span>Visão Geral</span>
+                    </span>
+            </button>
+
+            <button onclick="switchTab('servidores')" data-tab="servidores" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl text-green-100 hover:bg-green-800/60 hover:text-white transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-users w-5 text-center"></i>
+                        <span>Servidores</span>
+                    </span>
+                <span id="badge-nav-servidores" class="text-xs bg-green-900/80 text-green-200 px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="switchTab('afastamentos')" data-tab="afastamentos" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl text-green-100 hover:bg-green-800/60 hover:text-white transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-plane-departure w-5 text-center"></i>
+                        <span>Afastamentos</span>
+                    </span>
+                <span id="badge-nav-afastamentos" class="text-xs bg-green-900/80 text-green-200 px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="switchTab('relatorios')" data-tab="relatorios" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl text-green-100 hover:bg-green-800/60 hover:text-white transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-file-alt w-5 text-center"></i>
+                        <span>Relatórios Semestrais</span>
+                    </span>
+                <span id="badge-nav-relatorios" class="text-xs bg-green-900/80 text-green-200 px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="switchTab('pendencias')" data-tab="pendencias" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl text-green-100 hover:bg-green-800/60 hover:text-white transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-tasks w-5 text-center"></i>
+                        <span>Pendências</span>
+                    </span>
+                <span id="badge-nav-pendencias" class="text-xs bg-amber-500 text-slate-900 font-bold px-2 py-0.5 rounded-full">0</span>
+            </button>
+
+            <button onclick="switchTab('alertas')" data-tab="alertas" class="nav-btn w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-medium rounded-xl text-green-100 hover:bg-green-800/60 hover:text-white transition-all">
+                    <span class="flex items-center space-x-3">
+                        <i class="fas fa-bell w-5 text-center"></i>
+                        <span>Alertas de Prazo</span>
+                    </span>
+                <span id="badge-nav-alertas" class="text-xs bg-ifpa-accent text-white font-bold px-2 py-0.5 rounded-full">0</span>
+            </button>
+        </nav>
+
+        <!-- Rodapé da Sidebar (Status LocalStorage) -->
+        <div class="p-4 border-t border-green-800/80 bg-[#144718] text-xs text-green-200">
+            <div class="flex items-center space-x-2 mb-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="font-semibold text-white">Banco Local Ativo</span>
+            </div>
+            <p class="text-[11px] text-green-300/80 leading-relaxed">
+                Persistência offline via LocalStorage simulando MySQL (`gestao.sql`).
+            </p>
+        </div>
+    </aside>
+
+    <!-- Área Principal de Conteúdo -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        <!-- Header Superior -->
+        <header class="bg-white border-b border-slate-200 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xs z-10">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div>
+                    <h1 id="pageTitle" class="text-lg sm:text-xl font-bold text-slate-800">Visão Geral</h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">Instituto Federal de Educação, Ciência e Tecnologia do Pará</p>
+                </div>
+            </div>
+
+            <!-- Ações Globais de Backup / Demo -->
+            <div class="flex items-center flex-wrap gap-2">
+                <label class="cursor-pointer inline-flex items-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-300 transition-colors" title="Importar arquivo JSON">
+                    <i class="fas fa-upload mr-1.5 text-slate-500"></i>
+                    <span class="hidden sm:inline">Importar JSON</span>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importarJSON(event)">
+                </label>
+
+                <button onclick="exportarJSON()" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-ifpa-dark bg-ifpa-light hover:bg-green-200/70 rounded-lg border border-green-300 transition-colors" title="Baixar backup completo dos dados">
+                    <i class="fas fa-download mr-1.5"></i>
+                    <span>Exportar Backup (JSON)</span>
+                </button>
+
+
+            </div>
+        </header>
+
+        <!-- Container Dinâmico das Abas -->
+        <main class="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6">
+
+            <!-- ==================== 1. ABA DASHBOARD ==================== -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <!-- Cards de Resumo (KPIs) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div onclick="switchTab('servidores')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Servidores</p>
+                                <h3 id="kpi-servidores" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fas fa-users text-lg"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3"><span id="kpi-servidores-ativos" class="text-emerald-600 font-semibold">0</span> ativos/cadastrados</p>
+                    </div>
+
+                    <div onclick="switchTab('afastamentos')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Afastamentos Ativos</p>
+                                <h3 id="kpi-afastamentos" class="text-2xl font-bold text-ifpa-primary mt-1">0</h3>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-ifpa-light text-ifpa-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fas fa-plane-departure text-lg"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3">Em curso ou prorrogados</p>
+                    </div>
+
+                    <div onclick="switchTab('relatorios')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Relatórios Semestrais</p>
+                                <h3 id="kpi-relatorios" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fas fa-file-contract text-lg"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3"><span id="kpi-relatorios-pendentes" class="text-amber-600 font-semibold">0</span> aguardando análise/entrega</p>
+                    </div>
+
+                    <div onclick="switchTab('pendencias')" class="cursor-pointer bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pendências Abertas</p>
+                                <h3 id="kpi-pendencias" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fas fa-exclamation-circle text-lg"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3">Documentais / administrativas</p>
+                    </div>
+
+                    <div onclick="switchTab('alertas')" class="cursor-pointer bg-white p-5 rounded-2xl border border-red-200/80 shadow-xs hover:shadow-md transition-all group">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alertas Urgentes</p>
+                                <h3 id="kpi-alertas" class="text-2xl font-bold text-ifpa-accent mt-1">0</h3>
+                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-red-50 text-ifpa-accent flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i class="fas fa-bell text-lg"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-3">Prazos vencidos ou próximos</p>
+                    </div>
+                </div>
+
+                <!-- Painel Inferior do Dashboard: Alertas Urgentes + Últimos Afastamentos -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Lista de Alertas Urgentes -->
+                    <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col">
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-ifpa-accent"></span>
+                                <h2 class="text-base font-bold text-slate-800">Alertas de Prazo Críticos</h2>
+                            </div>
+                            <button onclick="switchTab('alertas')" class="text-xs font-semibold text-ifpa-primary hover:underline">Ver todos →</button>
+                        </div>
+                        <div id="dashboard-alertas-list" class="p-6 space-y-3 flex-1">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Resumo por Tipo de Afastamento & Últimas Movimentações -->
+                    <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col">
+                        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h2 class="text-base font-bold text-slate-800">Distribuição de Afastamentos</h2>
+                            <button onclick="abrirModalAfastamento()" class="text-xs bg-ifpa-primary text-white px-2.5 py-1 rounded-lg hover:bg-ifpa-dark transition-colors">+ Novo</button>
+                        </div>
+                        <div id="dashboard-distribuicao" class="p-6 space-y-4 flex-1">
+                            <!-- Barras de progresso via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 2. ABA SERVIDORES ==================== -->
+            <section id="tab-servidores" class="tab-content hidden space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex flex-1 flex-wrap items-center gap-3">
+                        <div class="relative flex-1 min-w-[220px]">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" id="busca-servidor" oninput="renderServidores()" placeholder="Buscar por nome, SIAPE, campus ou e-mail..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-ifpa-primary focus:border-ifpa-primary outline-none">
+                        </div>
+                        <select id="filtro-servidor-status" onchange="renderServidores()" class="px-3.5 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-ifpa-primary outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="Ativo">Ativo</option>
+                            <option value="Afastado">Afastado</option>
+                            <option value="Inativo">Inativo</option>
+                        </select>
+                    </div>
+                    <button onclick="abrirModalServidor()" class="inline-flex items-center justify-center px-4 py-2.5 bg-ifpa-primary hover:bg-ifpa-dark text-white text-sm font-semibold rounded-xl shadow-xs transition-colors shrink-0">
+                        <i class="fas fa-plus mr-2"></i> Novo Servidor
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ID</th>
+                                <th class="py-3.5 px-4">Servidor</th>
+                                <th class="py-3.5 px-4">SIAPE</th>
+                                <th class="py-3.5 px-4">Cargo</th>
+                                <th class="py-3.5 px-4">Lotação / Campus</th>
+                                <th class="py-3.5 px-4">Status</th>
+                                <th class="py-3.5 px-4 text-right">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabela-servidores" class="divide-y divide-slate-100 text-sm">
+                            <!-- Renderizado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 3. ABA AFASTAMENTOS ==================== -->
+            <section id="tab-afastamentos" class="tab-content hidden space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex flex-1 flex-wrap items-center gap-3">
+                        <div class="relative flex-1 min-w-[220px]">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" id="busca-afastamento" oninput="renderAfastamentos()" placeholder="Buscar por servidor, tipo ou processo SUAP..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-ifpa-primary outline-none">
+                        </div>
+                        <select id="filtro-afastamento-status" onchange="renderAfastamentos()" class="px-3.5 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-ifpa-primary outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="Ativo">Ativo</option>
+                            <option value="Prorrogado">Prorrogado</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+                    <button onclick="abrirModalAfastamento()" class="inline-flex items-center justify-center px-4 py-2.5 bg-ifpa-primary hover:bg-ifpa-dark text-white text-sm font-semibold rounded-xl shadow-xs transition-colors shrink-0">
+                        <i class="fas fa-plus mr-2"></i> Novo Afastamento
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ID</th>
+                                <th class="py-3.5 px-4">Servidor</th>
+                                <th class="py-3.5 px-4">Tipo de Afastamento</th>
+                                <th class="py-3.5 px-4">Período</th>
+                                <th class="py-3.5 px-4">Processo SUAP</th>
+                                <th class="py-3.5 px-4">Status</th>
+                                <th class="py-3.5 px-4 text-right">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabela-afastamentos" class="divide-y divide-slate-100 text-sm">
+                            <!-- Renderizado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 4. ABA RELATÓRIOS SEMESTRAIS ==================== -->
+            <section id="tab-relatorios" class="tab-content hidden space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex flex-1 flex-wrap items-center gap-3">
+                        <div class="relative flex-1 min-w-[220px]">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" id="busca-relatorio" oninput="renderRelatorios()" placeholder="Buscar por servidor, semestre (ex: 2026.1)..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-ifpa-primary outline-none">
+                        </div>
+                        <select id="filtro-relatorio-situacao" onchange="renderRelatorios()" class="px-3.5 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-ifpa-primary outline-none">
+                            <option value="">Todas as Situações</option>
+                            <option value="Aprovado">Aprovado</option>
+                            <option value="Em Análise">Em Análise</option>
+                            <option value="Pendente">Pendente</option>
+                        </select>
+                    </div>
+                    <button onclick="abrirModalRelatorio()" class="inline-flex items-center justify-center px-4 py-2.5 bg-ifpa-primary hover:bg-ifpa-dark text-white text-sm font-semibold rounded-xl shadow-xs transition-colors shrink-0">
+                        <i class="fas fa-plus mr-2"></i> Registrar Relatório
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ID</th>
+                                <th class="py-3.5 px-4">Servidor / Afastamento</th>
+                                <th class="py-3.5 px-4">Semestre Ref.</th>
+                                <th class="py-3.5 px-4">Data Entrega</th>
+                                <th class="py-3.5 px-4">Situação / Parecer</th>
+                                <th class="py-3.5 px-4">Observações</th>
+                                <th class="py-3.5 px-4 text-right">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabela-relatorios" class="divide-y divide-slate-100 text-sm">
+                            <!-- Renderizado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 5. ABA PENDÊNCIAS ==================== -->
+            <section id="tab-pendencias" class="tab-content hidden space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex flex-1 flex-wrap items-center gap-3">
+                        <div class="relative flex-1 min-w-[220px]">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                            <input type="text" id="busca-pendencia" oninput="renderPendencias()" placeholder="Buscar pendência ou servidor..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-ifpa-primary outline-none">
+                        </div>
+                        <select id="filtro-pendencia-status" onchange="renderPendencias()" class="px-3.5 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-ifpa-primary outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="Aberta">Aberta</option>
+                            <option value="Resolvida">Resolvida</option>
+                        </select>
+                    </div>
+                    <button onclick="abrirModalPendencia()" class="inline-flex items-center justify-center px-4 py-2.5 bg-ifpa-primary hover:bg-ifpa-dark text-white text-sm font-semibold rounded-xl shadow-xs transition-colors shrink-0">
+                        <i class="fas fa-plus mr-2"></i> Nova Pendência
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th class="py-3.5 px-4">ID</th>
+                                <th class="py-3.5 px-4">Servidor / Vínculo</th>
+                                <th class="py-3.5 px-4">Descrição da Pendência</th>
+                                <th class="py-3.5 px-4">Data Limite</th>
+                                <th class="py-3.5 px-4">Prioridade</th>
+                                <th class="py-3.5 px-4">Status</th>
+                                <th class="py-3.5 px-4 text-right">Ações</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabela-pendencias" class="divide-y divide-slate-100 text-sm">
+                            <!-- Renderizado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== 6. ABA ALERTAS DE PRAZO ==================== -->
+            <section id="tab-alertas" class="tab-content hidden space-y-5">
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800">Monitoramento Automático de Prazos</h2>
+                        <p class="text-xs text-slate-500">Alertas gerados automaticamente a partir das datas de retorno, relatórios pendentes e pendências abertas.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="filtro-alerta-tipo" onchange="renderAlertas()" class="px-3.5 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-ifpa-primary outline-none">
+                            <option value="">Todos os Tipos</option>
+                            <option value="Retorno de Afastamento">Retorno de Afastamento</option>
+                            <option value="Relatório Semestral">Relatório Semestral</option>
+                            <option value="Prazo de Pendência">Prazo de Pendência</option>
+                        </select>
+                        <button onclick="abrirModalAlerta()" class="inline-flex items-center justify-center px-4 py-2 bg-ifpa-primary hover:bg-ifpa-dark text-white text-sm font-semibold rounded-xl shadow-xs transition-colors">
+                            <i class="fas fa-plus mr-2"></i> Alerta Manual
+                        </button>
+                    </div>
+                </div>
+
+                <div id="grid-alertas" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    <!-- Cards de alertas renderizados via JS -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+</div>
+
+<!-- ==================== MODAIS DE CADASTRO / EDIÇÃO ==================== -->
+
+<script>
+    const porId = id => document.getElementById(id);
+    const nomes = {
+        dashboard: 'Visão Geral', servidores: 'Servidores', afastamentos: 'Afastamentos',
+        relatorios: 'Relatórios Semestrais', pendencias: 'Pendências', alertas: 'Alertas de Prazo'
+    };
+    const statusLegivel = {
+        PROGRAMADO: 'Programado', EM_ANDAMENTO: 'Em andamento', CONCLUIDO: 'Concluído',
+        CANCELADO: 'Cancelado', PENDENTE: 'Pendente', ENTREGUE: 'Entregue',
+        ABERTA: 'Aberta', EM_ANALISE: 'Em análise', RESOLVIDA: 'Resolvida',
+        CANCELADA: 'Cancelada', ENVIADO: 'Enviado', FALHOU: 'Falhou'
+    };
+    const rotulo = valor => statusLegivel[valor] ?? valor;
+    const data = valor => valor ? valor.split('-').reverse().join('/') : '—';
+
+    function dataHora(valor) {
+        const [dia, hora] = valor.split('T');
+        return data(dia) + ' ' + hora.slice(0, 5);
+    }
+
+    const normalizar = valor => String(valor ?? '').normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+    function switchTab(aba) {
+        document.querySelectorAll('.tab-content').forEach(secao =>
+            secao.classList.toggle('hidden', secao.id !== 'tab-' + aba));
+
+        document.querySelectorAll('.nav-btn').forEach(botao => {
+            const ativo = botao.dataset.tab === aba;
+            for (const classe of ['bg-ifpa-primary', 'text-white', 'shadow-sm']) {
+                botao.classList.toggle(classe, ativo);
+            }
+            botao.classList.toggle('text-green-100', !ativo);
+            botao.classList.toggle('hover:bg-green-800/60', !ativo);
+        });
+
+        porId('pageTitle').textContent = nomes[aba];
+        if (window.innerWidth < 1024 && !porId('sidebarOverlay').classList.contains('hidden')) {
+            toggleSidebar();
+        }
+    }
+
+    function toggleSidebar() {
+        porId('sidebar').classList.toggle('-translate-x-full');
+        porId('sidebarOverlay').classList.toggle('hidden');
+    }
+
+    function elemento(tag, classe, texto) {
+        const no = document.createElement(tag);
+        no.className = classe;
+        if (texto != null) no.textContent = texto;
+        return no;
+    }
+
+    function tabela(aba, colunas, registros, status = null) {
+        const secao = porId('tab-' + aba);
+        const corpo = porId('tabela-' + aba);
+        const cabecalho = corpo.closest('table').querySelector('thead tr');
+        cabecalho.replaceChildren(...colunas.map(titulo =>
+            elemento('th', 'py-3.5 px-4', titulo)));
+
+        const busca = secao.querySelector('input');
+        busca.removeAttribute('oninput');
+        busca.placeholder = 'Buscar em ' + nomes[aba].toLowerCase() + '…';
+
+        const filtro = secao.querySelector('select');
+        if (status === null) {
+            filtro.remove();
+        } else {
+            filtro.removeAttribute('onchange');
+            filtro.replaceChildren(new Option('Todos os status', ''),
+                ...[...new Set(registros.map(linha => linha[status]))].sort()
+                    .map(valor => new Option(rotulo(valor), valor)));
+        }
+
+        function renderizar() {
+            const termo = normalizar(busca.value.trim());
+            const visiveis = registros.filter(linha =>
+                (status === null || !filtro.value || linha[status] === filtro.value) &&
+                linha.some((valor, i) => normalizar(i === status ? rotulo(valor) : valor).includes(termo)));
+
+            corpo.replaceChildren();
+            if (!visiveis.length) {
+                const celula = corpo.insertRow().insertCell();
+                celula.colSpan = colunas.length;
+                celula.className = 'p-6 text-center text-slate-500';
+                celula.textContent = 'Nenhum registro encontrado.';
+            }
+
+            for (const linha of visiveis) {
+                const tr = corpo.insertRow();
+                tr.className = 'hover:bg-slate-50';
+                linha.forEach((valor, i) => {
+                    const td = tr.insertCell();
+                    td.className = 'py-3 px-4';
+                    if (i === status) {
+                        td.append(elemento('span',
+                            'rounded-lg bg-ifpa-light text-ifpa-dark px-2 py-1 font-semibold',
+                            rotulo(valor)));
+                    } else {
+                        td.textContent = valor ?? '—';
+                    }
+                });
+            }
+        }
+
+        busca.oninput = renderizar;
+        if (status !== null) filtro.onchange = renderizar;
+        renderizar();
+    }
+
+    function exibir(db) {
+        const servidores = new Map(db.servidores.map(s => [s[0], s[1]]));
+        const afastamentos = new Map(db.afastamentos.map(a => [a[0], a[1]]));
+        const pendencias = new Map(db.pendencias.map(p => [p[0], p[1]]));
+        const nome = id => servidores.get(id) ?? '—';
+        const nomePorAfastamento = id => nome(afastamentos.get(id));
+
+        tabela('servidores', ['ID', 'Servidor', 'Matrícula', 'Cargo', 'Departamento'], db.servidores);
+        tabela('afastamentos',
+            ['ID', 'Servidor', 'Tipo de afastamento', 'Início', 'Fim previsto', 'Fim efetivo', 'Observações', 'Status'],
+            db.afastamentos.map(([id, servidor, tipo, inicio, prevista, efetiva, obs, status]) =>
+                [id, nome(servidor), tipo, data(inicio), data(prevista), data(efetiva), obs, status]), 7);
+        tabela('relatorios',
+            ['ID', 'Servidor', 'Afastamento', 'Semestre', 'Prazo', 'Entrega', 'Arquivo', 'Status'],
+            db.relatorios.map(([id, afast, semestre, prazo, entrega, arquivo, status]) =>
+                [id, nomePorAfastamento(afast), afast, semestre, data(prazo), data(entrega), arquivo, status]), 7);
+        tabela('pendencias',
+            ['ID', 'Servidor', 'Afastamento', 'Relatório', 'Descrição', 'Abertura', 'Resolução', 'Status'],
+            db.pendencias.map(([id, afast, rel, descricao, abertura, resolucao, status]) =>
+                [id, nomePorAfastamento(afast), afast, rel, descricao, data(abertura), data(resolucao), status]), 7);
+
+        const avisosPendentes = db.alertas.filter(a => a[4] === 'PENDENTE');
+        const totais = {
+            servidores: db.servidores.length,
+            afastamentos: db.afastamentos.filter(a => a[7] === 'EM_ANDAMENTO').length,
+            relatorios: db.relatorios.length,
+            pendencias: db.pendencias.filter(p => p[6] === 'ABERTA').length,
+            alertas: avisosPendentes.length
+        };
+
+        for (const [aba, total] of Object.entries(totais)) {
+            porId('kpi-' + aba).textContent = total;
+            porId('badge-nav-' + aba).textContent = db[aba].length;
+        }
+        porId('kpi-relatorios-pendentes').textContent =
+            db.relatorios.filter(r => r[6] === 'PENDENTE').length;
+
+        function cards(alvo, lista) {
+            alvo.replaceChildren();
+            for (const [id, pendencia, mensagem, dias, status, envio] of lista) {
+                const card = elemento('article', 'bg-white border border-slate-200 rounded-2xl p-4 space-y-2');
+                card.append(
+                    elemento('span', 'text-xs font-bold text-ifpa-primary', rotulo(status)),
+                    elemento('h3', 'font-bold', nomePorAfastamento(pendencias.get(pendencia))),
+                    elemento('p', 'text-sm break-words', mensagem),
+                    elemento('p', 'text-xs text-slate-500',
+                        `Alerta #${id} · Pendência #${pendencia} · ${dias} dia(s) de antecedência`)
+                );
+                if (envio) {
+                    card.append(elemento('p', 'text-xs text-slate-500', 'Enviado em ' + dataHora(envio)));
+                }
+                alvo.append(card);
+            }
+            if (!lista.length) {
+                alvo.append(elemento('p', 'text-sm text-slate-500', 'Nenhum alerta encontrado.'));
+            }
+        }
+
+        cards(porId('dashboard-alertas-list'), avisosPendentes.slice(0, 4));
+        const filtro = porId('filtro-alerta-tipo');
+        filtro.removeAttribute('onchange');
+        filtro.setAttribute('aria-label', 'Status de envio');
+        filtro.replaceChildren(new Option('Todos os status', ''),
+            ...[...new Set(db.alertas.map(a => a[4]))].sort().map(s => new Option(rotulo(s), s)));
+        filtro.onchange = () => cards(porId('grid-alertas'),
+            db.alertas.filter(a => !filtro.value || a[4] === filtro.value));
+        filtro.onchange();
+
+        const distribuicao = porId('dashboard-distribuicao');
+        distribuicao.replaceChildren();
+        const tipos = new Map();
+        db.afastamentos.forEach(a => tipos.set(a[2], (tipos.get(a[2]) ?? 0) + 1));
+        for (const [tipo, quantidade] of tipos) {
+            const percentual = Math.round(100 * quantidade / db.afastamentos.length);
+            const barra = elemento('div', 'h-2 bg-slate-100 rounded-full overflow-hidden');
+            const preenchimento = elemento('div', 'h-full bg-ifpa-primary');
+            preenchimento.style.width = percentual + '%';
+            barra.append(preenchimento);
+            distribuicao.append(elemento('p', 'text-sm', `${tipo} · ${quantidade} (${percentual}%)`), barra);
+        }
+        if (!tipos.size) {
+            distribuicao.append(elemento('p', 'text-sm text-slate-500', 'Nenhum afastamento registrado.'));
+        }
+    }
+
+    async function iniciar() {
+        document.querySelectorAll('button[onclick^="abrirModal"], header label, header button[onclick="exportarJSON()"]')
+            .forEach(no => no.remove());
+
+        const rodape = porId('sidebar').lastElementChild;
+        const situacao = elemento('p', 'text-xs text-green-200', 'Consultando MySQL…');
+        situacao.setAttribute('role', 'status');
+        rodape.replaceChildren(situacao);
+
+        porId('kpi-servidores-ativos').parentElement.textContent = 'Servidores cadastrados';
+        porId('kpi-relatorios-pendentes').nextSibling.textContent = ' aguardando entrega';
+        const subtitulo = (id, texto) => {
+            porId(id).closest('.group').querySelector('p:last-child').textContent = texto;
+        };
+        subtitulo('kpi-afastamentos', 'Em andamento');
+        subtitulo('kpi-alertas', 'Envios pendentes');
+        porId('kpi-alertas').parentElement.firstElementChild.textContent = 'Alertas Pendentes';
+        porId('dashboard-alertas-list').previousElementSibling.querySelector('h2').textContent =
+            'Alertas de Prazo Pendentes';
+        porId('tab-alertas').querySelector('h2').textContent = 'Alertas de Prazo';
+        porId('tab-alertas').querySelector('p').textContent = 'Alertas cadastrados e situação de envio.';
+
+        const principal = document.querySelector('main');
+        const mensagem = elemento('p', 'bg-white rounded-xl border border-slate-200 p-4',
+            'Carregando dados do MySQL…');
+        mensagem.setAttribute('role', 'status');
+        principal.before(mensagem);
+        principal.hidden = true;
+
+        try {
+            const resposta = await fetch('/api/painel');
+            if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
+            exibir(await resposta.json());
+            principal.hidden = false;
+            mensagem.remove();
+            situacao.textContent = 'MySQL conectado';
+        } catch (erro) {
+            console.error(erro);
+            situacao.textContent = 'Falha ao carregar dados';
+            mensagem.textContent = 'Não foi possível carregar os dados. Confira o console do IntelliJ.';
+        }
+    }
+
+    iniciar();
+</script>
+</body>
+</html>
+</script>
+</body>
+</html>
